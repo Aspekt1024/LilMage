@@ -13,6 +13,7 @@ namespace LilMage.Units
         void Init(IUnit caster);
         
         CastResult Cast(IUnit caster, IUnit target);
+        CastResult CheckCast(IUnit caster, IUnit target);
         
         /// <summary>
         /// Similar to Update(), and returns the castbar percentage

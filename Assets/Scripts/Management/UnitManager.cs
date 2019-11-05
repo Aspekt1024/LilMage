@@ -11,7 +11,7 @@ namespace LilMage
     {
         public Hero PlayerHero { get; private set; }
         private readonly List<IUnit> units = new List<IUnit>();
-        
+
         public void Init()
         {
             Debug.Log("Unit manager online");

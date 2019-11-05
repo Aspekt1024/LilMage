@@ -16,11 +16,6 @@ namespace LilMage
         }
         private States state = States.None;
 
-        private void Start()
-        {
-            StartTracking(FindObjectOfType<Hero>().transform);
-        }
-
         public void StartTracking(Transform tf)
         {
             state = States.Tracking;

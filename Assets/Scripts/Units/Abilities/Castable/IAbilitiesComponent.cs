@@ -6,7 +6,8 @@ namespace LilMage.Units
     {
         event Action<float> OnCastProgressChanged;
         
-        CastResult Cast<T>() where T : IAbility;
+        CastResult Cast<T>(IUnit target) where T : IAbility;
+        CastResult CheckCast<T>(IUnit target) where T : IAbility;
         void Add(IAbility ability);
         void Remove<T>() where T : IAbility;
 

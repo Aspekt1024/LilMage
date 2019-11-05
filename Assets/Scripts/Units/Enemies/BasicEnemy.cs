@@ -8,7 +8,17 @@ namespace LilMage.Units
         
         private Hero targettedHero;
         private bool canSeeHero;
-        
+
+        protected override void Initialise()
+        {
+            
+        }
+
+        protected override void InitialiseMine()
+        {
+            
+        }
+
         public override void Die()
         {
             base.Die();

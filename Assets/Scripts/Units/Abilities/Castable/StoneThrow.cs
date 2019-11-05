@@ -11,12 +11,19 @@ namespace LilMage.Units
         
         private IUnit caster;
         private IUnit target;
-        
-        public override CastResult Cast(IUnit caster, IUnit target)
+
+        public override CastResult CheckCast(IUnit caster, IUnit target)
         {
             if (caster.CurrentMana < cost) return CastResult.ErrorNotEnoughMana;
             if (IsActive) return CastResult.ErrorAlreadyCasting;
             if ((UnitBase)target == null) return CastResult.ErrorNoTarget;
+            return CastResult.Success;
+        }
+
+        public override CastResult Cast(IUnit caster, IUnit target)
+        {
+            var check = CheckCast(caster, target);
+            if (check != CastResult.Success) return check;
 
             this.caster = caster;
             this.target = target;
@@ -29,6 +36,8 @@ namespace LilMage.Units
 
         protected override CastResult Trigger()
         {
+            // TODO check if target has been destroyed / is dead
+            // TODO check in an update call to cancel casting
             StopCasting();
             if (caster.CurrentMana < cost) return CastResult.ErrorNotEnoughMana;
             if (target == null) return CastResult.ErrorNoTarget;
@@ -36,7 +45,7 @@ namespace LilMage.Units
             caster.Effects.Stop<SpellcastEffect>();
             caster.TakeMana(cost);
 
-            var casterTf = ((UnitBase) caster).transform;
+            var casterTf = ((UnitBase)target).transform;
             var projectile = Instantiate(projectilePrefab);
             var settings = new Projectile.Settings(20f, ((UnitBase)target).transform, caster.Effects.GetProjectileSpawnPoint());
             projectile.OnTargetHit += TargetHit;

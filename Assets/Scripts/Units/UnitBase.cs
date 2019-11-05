@@ -1,5 +1,5 @@
 using System;
-using Boo.Lang;
+using Photon.Pun;
 using UnityEngine;
 
 namespace LilMage.Units
@@ -7,9 +7,11 @@ namespace LilMage.Units
     /// <summary>
     /// The base class for all units in LilMage
     /// </summary>
-    public abstract class UnitBase : MonoBehaviour, IUnit
+    public abstract class UnitBase : MonoBehaviour, IUnit, IPunObservable
     {
         public string Name { get; protected set; } = "Unknown";
+        
+        protected PhotonView photonView;
 
         public int MaxHealth { get; private set; } = 10;
         public int MaxMana { get; private set; } = 5;
@@ -31,7 +33,29 @@ namespace LilMage.Units
         {
             Abilities = new AbilitiesComponent(this);
             Effects = GetComponentInChildren<UnitEffects>();
+            
+            photonView = GetComponent<PhotonView>();
+            if (photonView == null) return;
+            
+            if (photonView.IsMine)
+            {
+                photonView.RPC("RPC_SyncName", RpcTarget.AllBuffered, PlayerInfo.Instance.PlayerName);
+            }
         }
+
+        private void Start()
+        {
+            Initialise();
+            GameManager.Units.RegisterUnit(this);
+            
+            if (photonView == null || !photonView.IsMine) return;
+            InitialiseMine();
+        }
+
+        public int GetViewID() => photonView == null ? -1 : photonView.ViewID;
+
+        protected abstract void Initialise();
+        protected abstract void InitialiseMine();
 
         public int CurrentHealth
         {
@@ -76,6 +100,9 @@ namespace LilMage.Units
         public void TakeMana(int value) => CurrentMana -= value;
         public void AddMana(int value) => CurrentMana += value;
 
+        protected void SetHealth(int value) => CurrentHealth = value;
+        protected void SetMana(int value) => CurrentMana = value;
+
         public void Revive(float healthPercent, float manaPercent)
         {
             CurrentHealth = (int)(healthPercent * MaxHealth);
@@ -87,6 +114,35 @@ namespace LilMage.Units
             Target = target;
             GameManager.UI.Get<HUD>().SetTarget(target);
         }
+        
+        public void OnPhotonSerializeView(PhotonStream stream, PhotonMessageInfo info)
+        {
+            if (stream.IsWriting)
+            {
+                stream.SendNext(CurrentHealth);
+                stream.SendNext(CurrentMana);
+                stream.SendNext(Target?.GetViewID() ?? -1);
+            }
+            else
+            {
+                var health = (int)stream.ReceiveNext();
+                var mana = (int)stream.ReceiveNext();
+                var targetID = (int)stream.ReceiveNext();
+                SetHealth(health);
+                SetMana(mana);
+                
+                if (targetID < 0)
+                {
+                    Target = null;
+                }
+                else
+                {
+                    var targetObj = PhotonView.Find(targetID);
+                    Target = targetObj == null ? null : targetObj.GetComponent<IUnit>();
+                }
+            }
+        }
 
+        [PunRPC] protected void RPC_SyncName(string name) => Name = name;
     }
 }

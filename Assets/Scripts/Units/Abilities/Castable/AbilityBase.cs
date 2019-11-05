@@ -26,6 +26,7 @@ namespace LilMage.Units
         private States state;
 
         public abstract CastResult Cast(IUnit caster, IUnit target);
+        public abstract CastResult CheckCast(IUnit caster, IUnit target);
 
         public void Init(IUnit caster)
         {

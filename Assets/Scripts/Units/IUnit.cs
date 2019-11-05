@@ -12,6 +12,11 @@ namespace LilMage.Units
         int MaxHealth { get; }
         int CurrentMana { get; }
         int MaxMana { get; }
+
+        /// <summary>
+        /// Returns the Photon View ID
+        /// </summary>
+        int GetViewID();
         
         IUnit Target { get; }
 

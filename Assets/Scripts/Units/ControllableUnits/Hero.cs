@@ -1,3 +1,4 @@
+using Photon.Pun;
 using UnityEngine;
 
 namespace LilMage.Units
@@ -5,7 +6,7 @@ namespace LilMage.Units
     /// <summary>
     /// The playable character in LilMage
     /// </summary>
-    [RequireComponent(typeof(LilMage.PlayerController), typeof(Rigidbody))]
+    [RequireComponent(typeof(Rigidbody))]
     public class Hero : UnitBase, IControllableUnit
     {
         #pragma warning disable 649
@@ -17,28 +18,29 @@ namespace LilMage.Units
         [SerializeField] private ReplenishMana replenishManaAbility;
         [SerializeField] private StoneThrow stoneThrowAbility;
         #pragma warning restore 649
-        
+
         public IMovement Movement { get; private set; }
         public IRotation Rotation { get; private set; }
         public IController CurrentController { get; private set; }
 
-
-        private void Start()
+        protected override void Initialise()
         {
-            Name = "Lil Mage";
-            
+            Abilities.Add(replenishManaAbility);
+            Abilities.Add(stoneThrowAbility);
+        }
+        
+        protected override void InitialiseMine()
+        {
             var body = GetComponent<Rigidbody>();
             Movement = new BasicMovement(body, movementSettings);
             Rotation = new BasicRotation(body, rotationSettings);
 
-            var controller = GetComponent<LilMage.PlayerController>();
+            var controller = Object.FindObjectOfType<LilMage.PlayerController>();
             controller.Init(this, playerID);
             PossessByController(controller);
 
             GameManager.UI.Get<HUD>().SetPlayer(this);
-            
-            Abilities.Add(replenishManaAbility);
-            Abilities.Add(stoneThrowAbility);
+            GameManager.Camera.SetPlayerCamera(this);
         }
 
         private void Update()
@@ -53,20 +55,39 @@ namespace LilMage.Units
 
         public void Attack()
         {
-            var result = Abilities.Cast<StoneThrow>();
+            var result = Abilities.CheckCast<StoneThrow>(Target);
             if (result != CastResult.Success)
             {
                 Debug.Log(result.ToString());
+            } 
+            else
+            {
+                photonView.RPC("RPC_Attack", RpcTarget.All, Target.GetViewID());
             }
+            
         }
 
         public void ReplenishMana()
         {
-            var result = Abilities.Cast<ReplenishMana>();
+            var result = Abilities.CheckCast<ReplenishMana>(this);
             if (result != CastResult.Success)
             {
                 Debug.Log(result.ToString());
             }
+            else
+            {
+                photonView.RPC("RPC_Replenish", RpcTarget.All);
+            }
         }
+
+        [PunRPC]
+        private void RPC_Attack(int targetID)
+        {
+            var targetObj = PhotonView.Find(targetID);
+            if (targetObj == null) return;
+            var target = targetObj.GetComponent<IUnit>();
+            Abilities.Cast<StoneThrow>(target);
+        }
+        [PunRPC] private void RPC_Replenish() => Abilities.Cast<ReplenishMana>(this);
     }
 }

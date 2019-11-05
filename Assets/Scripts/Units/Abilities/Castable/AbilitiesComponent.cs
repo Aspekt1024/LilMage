@@ -15,7 +15,7 @@ namespace LilMage.Units
 
         private States state = States.None;
 
-        private IUnit caster;
+        private readonly IUnit caster;
 
         private IAbility currentAbility;
         
@@ -34,15 +34,26 @@ namespace LilMage.Units
             OnCastProgressChanged?.Invoke(castPercent);
         }
         
-        public CastResult Cast<T>() where T : IAbility
+        public CastResult Cast<T>(IUnit target) where T : IAbility
         {
-            if (state == States.Casting) return CastResult.ErrorAlreadyCasting;
-            
             foreach (var ability in abilities)
             {
                 if (ability is T)
                 {
-                    return CastAbility(ability);
+                    return CastAbility(ability, target);
+                }
+            }
+            return CastResult.ErrorNotFound;
+        }
+
+        public CastResult CheckCast<T>(IUnit target) where T : IAbility
+        {
+            if (state == States.Casting) return CastResult.ErrorAlreadyCasting;
+            foreach (var ability in abilities)
+            {
+                if (ability is T)
+                {
+                    return ability.CheckCast(caster, target);
                 }
             }
 
@@ -68,10 +79,10 @@ namespace LilMage.Units
                 return;
             }
         }
-
-        private CastResult CastAbility(IAbility ability)
+        
+        private CastResult CastAbility(IAbility ability, IUnit target)
         {
-            var result = ability.Cast(caster, caster.Target);
+            var result = ability.Cast(caster, target);
             if (result == CastResult.Success)
             {
                 currentAbility = ability;

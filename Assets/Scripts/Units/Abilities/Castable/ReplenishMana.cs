@@ -9,11 +9,15 @@ namespace LilMage.Units
         private IUnit target;
 
         private float tickTime;
+
+        public override CastResult CheckCast(IUnit caster, IUnit target)
+        {
+            if (IsActive) return CastResult.ErrorAlreadyCasting;
+            return CastResult.Success;
+        }
         
         public override CastResult Cast(IUnit caster, IUnit target)
         {
-            if (IsActive) return CastResult.ErrorAlreadyCasting;
-
             this.caster = caster;
             this.target = caster;
             
